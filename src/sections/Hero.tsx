@@ -162,7 +162,7 @@ export function Hero() {
                             {[
                                 { val: "1 min", label: "to setup" },
                                 { val: "24/7", label: "available" },
-                                { val: "$10", label: "/month" },
+                                { val: "$49", label: "/month" },
                                 { val: "48h", label: "free trial", color: "text-emerald-400" }
                             ].map((stat, i) => (
                                 <div key={i}>
@@ -374,7 +374,9 @@ export function Hero() {
                                 isOpen={isPaymentModalOpen}
                                 onClose={() => setIsPaymentModalOpen(false)}
                                 amount="49.00"
-                                description="Premium API Access Pack"
+                                description="Premium API Access Subscription"
+                                isSubscription={true}
+                                planId={process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID}
                             />
                         </div>
                     </motion.div>

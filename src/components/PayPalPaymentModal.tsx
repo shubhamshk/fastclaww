@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CreditCard, Lock, CheckCircle2 } from 'lucide-react';
+import { X, Lock, CheckCircle2 } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -11,81 +11,95 @@ interface PayPalPaymentModalProps {
     onClose: () => void;
     amount: string;
     description: string;
+    isSubscription?: boolean; // New prop for recurring payments
+    planId?: string;          // Required for subscriptions
 }
 
-export function PayPalPaymentModal({ isOpen, onClose, amount, description }: PayPalPaymentModalProps) {
+export function PayPalPaymentModal({
+    isOpen,
+    onClose,
+    amount,
+    description,
+    isSubscription = false,
+    planId
+}: PayPalPaymentModalProps) {
     const [success, setSuccess] = useState(false);
     const [transactionId, setTransactionId] = useState("");
 
     const initialOptions = {
         clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
         currency: "USD",
-        intent: "capture",
+        intent: isSubscription ? "subscription" : "capture",
+        vault: isSubscription,
     };
 
-    const handleApprove = (data: any, actions: any) => {
-        return actions.order.capture().then(async (details: any) => {
-            console.log("PayPal Transaction Captured:", details);
-            if (details.id) setTransactionId(details.id);
-
-            try {
-                // 1. Get current user
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    console.error("No authenticated user found for transaction storage.");
-                    alert("Payment successful but not logged: User not logged in.");
-                    setSuccess(true);
-                    return;
-                }
-
-                // 2. Insert Transaction
-                const { error: txError } = await supabase
-                    .from('transactions')
-                    .insert({
-                        user_id: user.id,
-                        paypal_transaction_id: details.id,
-                        amount: amount,
-                        status: 'completed',
-                        package_type: description.toLowerCase().includes('premium') ? 'premium_pack' : 'basic_pack',
-                        metadata: details
-                    });
-
-                if (txError) {
-                    throw new Error(`Transaction storage failed: ${txError.message}`);
-                }
-
-                // 3. Update User Profile (Add credits or update plan)
-                // Assuming $49 pack gives pro access + $20 credits bonus mentioned in UI
-                if (description.includes("Premium") || amount === "49") {
-                    const { error: profileError } = await supabase
-                        .from('profiles')
-                        .update({
-                            plan_type: 'pro',
-                            // credit update logic: increment existing or set new? 
-                            // Using a simple increment for now if column exists, but for safety simple set or RPC is better.
-                            // Let's assume we just want to set them to PRO for now as this is the primary goal.
-                            // credits: 20.00 -- Optional if we want to reset/add credits.
-                        })
-                        .eq('id', user.id);
-
-                    if (profileError) console.error("Profile update error:", profileError);
-                }
-
-                console.log("Transaction stored and profile updated successfully in Supabase.");
+    const saveTransaction = async (id: string, details: any) => {
+        try {
+            // 1. Get current user
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error("No authenticated user found for transaction storage.");
+                alert("Payment successful but not logged: User not logged in.");
                 setSuccess(true);
-
-            } catch (err: any) {
-                console.error("Backend Sync Error:", err);
-                alert(`Payment successful but backend sync failed: ${err.message}`);
-                // Still show success UI as payment went through? Or warn?
-                // Showing success so user isn't panicked, but logging error is key.
-                setSuccess(true);
+                return;
             }
 
-        }).catch((err: any) => {
-            console.error("PayPal Capture Error:", err);
-            alert("Payment capture failed. Check console for details.");
-        });
+            // 2. Insert Transaction
+            const { error: txError } = await supabase
+                .from('transactions')
+                .insert({
+                    user_id: user.id,
+                    paypal_transaction_id: id,
+                    amount: amount,
+                    status: 'completed',
+                    package_type: description.toLowerCase().includes('premium') ? 'premium_pack' : 'basic_pack',
+                    metadata: details || { type: 'subscription', planId }
+                });
+
+            if (txError) {
+                throw new Error(`Transaction storage failed: ${txError.message}`);
+            }
+
+            // 3. Update User Profile (Add credits or update plan)
+            if (description.includes("Premium") || amount === "49") {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({
+                        plan_type: 'pro',
+                    })
+                    .eq('id', user.id);
+
+                if (profileError) console.error("Profile update error:", profileError);
+            }
+
+            console.log("Transaction stored and profile updated successfully in Supabase.");
+            setSuccess(true);
+
+        } catch (err: any) {
+            console.error("Backend Sync Error:", err);
+            alert(`Payment successful but backend sync failed: ${err.message}`);
+            setSuccess(true);
+        }
+    };
+
+    const handleApprove = async (data: any, actions: any) => {
+        if (isSubscription) {
+            // Handle Subscription
+            const subscriptionId = data.subscriptionID;
+            console.log("PayPal Subscription Created:", subscriptionId);
+            setTransactionId(subscriptionId);
+            await saveTransaction(subscriptionId, { type: 'subscription', subscriptionId, planId });
+        } else {
+            // Handle One-Time Payment
+            return actions.order.capture().then(async (details: any) => {
+                console.log("PayPal Transaction Captured:", details);
+                if (details.id) setTransactionId(details.id);
+                await saveTransaction(details.id, details);
+            }).catch((err: any) => {
+                console.error("PayPal Capture Error:", err);
+                alert("Payment capture failed. Check console for details.");
+            });
+        }
     };
 
     return (
@@ -117,7 +131,7 @@ export function PayPalPaymentModal({ isOpen, onClose, amount, description }: Pay
                                 <X className="w-5 h-5" />
                             </button>
                             <h2 className="text-xl font-semibold text-white font-heading pr-8">
-                                Complete Purchase
+                                {isSubscription ? "Subscribe" : "Complete Purchase"}
                             </h2>
                             <p className="text-xs text-zinc-400 mt-1">
                                 Secure payment via PayPal
@@ -131,10 +145,10 @@ export function PayPalPaymentModal({ isOpen, onClose, amount, description }: Pay
                                     <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
                                         <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Successfully acquired the spot!</h3>
+                                    <h3 className="text-xl font-bold text-white mb-2">Successfully {isSubscription ? "Subscribed" : "Acquired"}!</h3>
                                     {transactionId && (
                                         <div className="mb-4 px-3 py-1 bg-white/5 rounded border border-white/10 inline-block">
-                                            <p className="text-zinc-500 font-mono text-[10px]">Transaction ID: {transactionId}</p>
+                                            <p className="text-zinc-500 font-mono text-[10px]">{isSubscription ? "Sub" : "Tx"} ID: {transactionId}</p>
                                         </div>
                                     )}
                                     <p className="text-zinc-400 text-sm leading-relaxed max-w-xs mx-auto mb-8">
@@ -152,8 +166,8 @@ export function PayPalPaymentModal({ isOpen, onClose, amount, description }: Pay
                                 </div>
                             ) : (
                                 <>
-                                    {/* Test Mode Warning */}
-                                    {(initialOptions.clientId === "test" || !process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) && (
+                                    {/* Test Mode / Missing Plan Warning */}
+                                    {((initialOptions.clientId === "test" || !process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) || (isSubscription && !planId)) && (
                                         <div className="mb-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-start gap-3">
                                             <div className="p-1 rounded bg-orange-500/20 text-orange-500 mt-0.5">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -161,9 +175,13 @@ export function PayPalPaymentModal({ isOpen, onClose, amount, description }: Pay
                                                 </svg>
                                             </div>
                                             <div>
-                                                <h4 className="text-orange-400 font-bold text-xs uppercase tracking-wide mb-1">Mock Mode Active</h4>
+                                                <h4 className="text-orange-400 font-bold text-xs uppercase tracking-wide mb-1">
+                                                    {isSubscription && !planId ? "Configuration Required" : "Mock Mode Active"}
+                                                </h4>
                                                 <p className="text-orange-300/80 text-[11px] leading-relaxed">
-                                                    Using <code>test</code> Client ID. Payments will succeed but <b>no money will be deducted</b> from any account.
+                                                    {isSubscription && !planId
+                                                        ? "Please set a valid NEXT_PUBLIC_PAYPAL_PLAN_ID in .env.local"
+                                                        : <span>Using <code>test</code> Client ID. No real money deducted.</span>}
                                                 </p>
                                             </div>
                                         </div>
@@ -174,9 +192,12 @@ export function PayPalPaymentModal({ isOpen, onClose, amount, description }: Pay
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
                                                 <h3 className="font-medium text-white">{description}</h3>
-                                                <p className="text-xs text-zinc-500">Premium Access Pack</p>
+                                                <p className="text-xs text-zinc-500">{isSubscription ? "Monthly Subscription" : "Premium Access Pack"}</p>
                                             </div>
-                                            <span className="text-lg font-bold text-white">${amount}</span>
+                                            <div className="text-right">
+                                                <span className="text-lg font-bold text-white">${amount}</span>
+                                                {isSubscription && <span className="text-xs text-zinc-400 block">/month</span>}
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] text-zinc-500 mt-2 pt-2 border-t border-white/5">
                                             <Lock className="w-3 h-3" />
@@ -192,23 +213,26 @@ export function PayPalPaymentModal({ isOpen, onClose, amount, description }: Pay
                                                     layout: "vertical",
                                                     color: "gold",
                                                     shape: "rect",
-                                                    label: "pay",
+                                                    label: isSubscription ? "subscribe" : "pay",
                                                     height: 48
                                                 }}
-                                                createOrder={(data, actions) => {
+                                                createOrder={isSubscription ? undefined : (data, actions) => {
                                                     return actions.order.create({
-                                                        purchase_units: [
-                                                            {
-                                                                amount: {
-                                                                    value: amount,
-                                                                    currency_code: "USD"
-                                                                },
-                                                                description: description
+                                                        purchase_units: [{
+                                                            amount: {
+                                                                value: amount,
+                                                                currency_code: "USD"
                                                             },
-                                                        ],
+                                                            description: description
+                                                        }],
                                                         intent: "CAPTURE"
                                                     });
                                                 }}
+                                                createSubscription={isSubscription ? (data, actions) => {
+                                                    return actions.subscription.create({
+                                                        plan_id: planId ?? ""
+                                                    });
+                                                } : undefined}
                                                 onApprove={handleApprove}
                                                 onError={(err: any) => console.error("PayPal Error:", err)}
                                             />
