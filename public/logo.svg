@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Antennae -->
+  <path d="M70 50 C 60 30 50 30 50 40" stroke="#EF4444" stroke-width="8" stroke-linecap="round" />
+  <path d="M130 50 C 140 30 150 30 150 40" stroke="#EF4444" stroke-width="8" stroke-linecap="round" />
+  
+  <!-- Legs -->
+  <rect x="75" y="160" width="20" height="30" fill="#EF4444" />
+  <rect x="105" y="160" width="20" height="30" fill="#EF4444" />
+
+  <!-- Arms -->
+  <circle cx="35" cy="110" r="20" fill="#EF4444" />
+  <circle cx="165" cy="110" r="20" fill="#EF4444" />
+
+  <!-- Main Body -->
+  <circle cx="100" cy="100" r="70" fill="#EF4444" />
+  
+  <!-- Eyes -->
+  <circle cx="75" cy="90" r="10" fill="#00FFFF" />
+  <circle cx="125" cy="90" r="10" fill="#00FFFF" />
+</svg>
