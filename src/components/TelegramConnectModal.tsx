@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 interface TelegramConnectModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConnect?: () => void;
+    onConnect?: (token: string) => void;
 }
 
 export function TelegramConnectModal({ isOpen, onClose, onConnect }: TelegramConnectModalProps) {
@@ -17,6 +17,7 @@ export function TelegramConnectModal({ isOpen, onClose, onConnect }: TelegramCon
     const [isPlaying, setIsPlaying] = useState(true);
     const [progress, setProgress] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
+    const [botToken, setBotToken] = useState("");
 
     // Force autoplay when modal opens
     useEffect(() => {
@@ -123,13 +124,15 @@ export function TelegramConnectModal({ isOpen, onClose, onConnect }: TelegramCon
                                     <div className="relative">
                                         <input
                                             type="text"
+                                            value={botToken}
+                                            onChange={(e) => setBotToken(e.target.value)}
                                             placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwnxyz"
                                             className="w-full bg-zinc-900/50 border border-white/10 rounded-xl px-4 py-3.5 pl-4 pr-24 text-white placeholder:text-zinc-700 focus:outline-none focus:border-[#2AABEE]/50 focus:ring-1 focus:ring-[#2AABEE]/50 transition-all font-mono text-sm"
                                         />
                                         <div className="absolute right-2 top-1.5 bottom-1.5">
                                             <Button
                                                 onClick={() => {
-                                                    if (onConnect) onConnect();
+                                                    if (onConnect && botToken) onConnect(botToken);
                                                     onClose();
                                                 }}
                                                 className="h-full bg-[#2AABEE] hover:bg-[#229ED9] text-white text-xs font-semibold px-4 rounded-lg shadow-lg shadow-[#2AABEE]/20 transition-all"

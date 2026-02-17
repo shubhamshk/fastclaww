@@ -3,7 +3,6 @@
 import { Navbar } from '@/sections/Navbar';
 import { Hero } from '@/sections/Hero';
 import { MobileDemo } from '@/sections/MobileDemo';
-import { UseCases } from '@/sections/UseCases';
 import { Configurator } from '@/sections/Configurator';
 import { Comparison } from '@/sections/Comparison';
 
@@ -17,7 +16,6 @@ export default function Home() {
       <Hero />
       <MobileDemo />
       <Comparison />
-      <UseCases />
 
       <Footer />
     </main>

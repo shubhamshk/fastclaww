@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Check, Send, Phone, MessageCircle, Gamepad2, LogOut } from 'lucide-react';
@@ -71,8 +71,35 @@ export function Hero() {
         setIsTelegramConnected(false);
     };
 
+    const handleTelegramConnect = async (token?: string) => {
+        setIsTelegramConnected(true);
+        setIsTelegramModalOpen(false);
+
+        if (token && user) {
+            // Save Telegram Bot Token to Supabase
+            try {
+                const { error } = await supabase
+                    .from('instances')
+                    .insert({
+                        user_id: user.id,
+                        telegram_bot_token: token,
+                        status: 'active', // Mark as active immediately for now
+                        model_provider: 'gpt-4o'
+                    });
+
+                if (error) {
+                    console.error("Failed to save bot token:", error);
+                } else {
+                    console.log("Bot token saved successfully.");
+                }
+            } catch (err) {
+                console.error("Error saving bot token:", err);
+            }
+        }
+    };
+
     return (
-        <section className="relative min-h-[100dvh] lg:min-h-screen flex items-center justify-center pt-24 pb-12 lg:pt-32 lg:pb-20 overflow-hidden bg-black text-white">
+        <section className="relative min-h-[100dvh] lg:min-h-screen flex items-center justify-center pt-20 pb-12 lg:pt-24 lg:pb-16 overflow-hidden bg-black text-white">
             <TelegramConnectModal
                 isOpen={isTelegramModalOpen}
                 onClose={() => setIsTelegramModalOpen(false)}
@@ -88,7 +115,7 @@ export function Hero() {
 
                     {/* Left Side: Content */}
                     <motion.div
-                        className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left"
+                        className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left lg:-mt-16"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
@@ -97,51 +124,38 @@ export function Hero() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-zinc-300 mb-6 backdrop-blur-sm"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-zinc-300 mb-8 backdrop-blur-md shadow-lg shadow-emerald-500/10 hover:bg-white/10 transition-colors cursor-default"
                         >
-                            <span className="relative flex h-2 w-2">
+                            <span className="relative flex h-2.5 w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                             </span>
-                            Powered by <span className="text-white font-semibold">OpenClaw</span>
+                            <span className="tracking-wide">Powered by <span className="text-white font-semibold">FastClaww</span></span>
                         </motion.div>
 
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-6 leading-[1.1] font-heading">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-6 leading-[1.05] font-heading">
                             The Easiest & <br className="hidden lg:block" /> Cheapest way to <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-400 to-indigo-400 animate-text-gradient">
-                                run OpenClaw
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 animate-text-gradient">
+                                run FastClaww
                             </span>
                         </h1>
 
                         <p className="text-base text-zinc-400 max-w-xl mb-8 leading-relaxed">
-                            Deploy your own fully managed OpenClaw instance in seconds.
+                            Deploy your own fully managed FastClaww instance in seconds.
                             Automate tasks, manage emails, and more directly from WhatsApp or Telegram.
                         </p>
 
-                        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 max-w-md backdrop-blur-sm">
-                            <p className="text-sm font-semibold text-indigo-300 flex items-center gap-2">
-                                <span className="text-lg">⚡</span>
-                                <span>50% cheaper setup & full pricing than any other OpenClaw setups.</span>
-                            </p>
+                        <div className="mb-8 p-0.5 rounded-xl bg-gradient-to-r from-indigo-500/30 to-purple-500/30">
+                            <div className="px-5 py-3 rounded-[10px] bg-black/80 backdrop-blur-xl flex items-center gap-3">
+                                <span className="text-xl">⚡</span>
+                                <p className="text-sm font-medium text-indigo-100">
+                                    <span className="text-indigo-300 font-bold">50% cheaper setup</span> & full pricing than any other OpenClaw setups.
+                                </p>
+                            </div>
                         </div>
 
 
-                        <motion.button
-                            onClick={() => setIsPaymentModalOpen(true)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="bg-white text-black font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl hover:bg-zinc-100 transition-all mb-8 flex items-center gap-2"
-                        >
-                            <span>Get Premium Pack</span>
-                            <span className="bg-black text-white text-xs px-2 py-0.5 rounded-full">$49</span>
-                        </motion.button>
-
-                        <PayPalPaymentModal
-                            isOpen={isPaymentModalOpen}
-                            onClose={() => setIsPaymentModalOpen(false)}
-                            amount="49.00"
-                            description="Premium API Access Pack"
-                        />
+                        {/* Premium Pack button removed */}
 
                         {/* Stats */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 border-t border-white/5 pt-8 w-full max-w-2xl">
@@ -167,12 +181,12 @@ export function Hero() {
                         transition={{ duration: 0.6, delay: 0.2 }}
                     >
                         <div className="relative w-full max-w-[440px] mx-auto">
-                            {/* Floating Offer Popup - Adjusted for mobile */}
+                            {/* Floating Offer Popup - Adjusted positioning */}
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5, duration: 0.5 }}
-                                className="absolute -top-[4.5rem] lg:-top-6 left-1/2 -translate-x-1/2 lg:-translate-y-full z-30 w-[90%] lg:w-full max-w-[320px]"
+                                className="absolute -top-[4.5rem] lg:top-0 left-1/2 -translate-x-1/2 lg:left-auto lg:right-[105%] lg:translate-x-0 lg:translate-y-0 z-30 w-[90%] lg:w-full max-w-[320px]"
                             >
                                 <div className="relative group perspective-1000">
                                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -189,7 +203,7 @@ export function Hero() {
                                         </div>
 
                                         {/* Pointing Arrow */}
-                                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-zinc-900 border-r border-b border-emerald-500/30 transform rotate-45"></div>
+                                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 lg:bottom-auto lg:top-8 lg:left-auto lg:-right-1.5 w-3 h-3 bg-zinc-900 border-r border-b lg:border-b-0 lg:border-t border-emerald-500/30 transform rotate-45"></div>
                                     </div>
                                 </div>
                             </motion.div>
@@ -298,11 +312,16 @@ export function Hero() {
                                             {/* User Profile */}
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    {user.user_metadata?.avatar_url ? (
-                                                        <img src={user.user_metadata.avatar_url} alt="Profile" className="w-10 h-10 rounded-full border border-emerald-500/20" />
+                                                    {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
+                                                        <img
+                                                            src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                                                            alt="Profile"
+                                                            className="w-10 h-10 rounded-full border border-emerald-500/20 object-cover"
+                                                            referrerPolicy="no-referrer"
+                                                        />
                                                     ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/20">
-                                                            {user.email?.charAt(0).toUpperCase()}
+                                                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/20 uppercase">
+                                                            {user.email?.charAt(0)}
                                                         </div>
                                                     )}
                                                     <div>
@@ -325,6 +344,7 @@ export function Hero() {
                                             <div>
                                                 <button
                                                     disabled={!isTelegramConnected}
+                                                    onClick={() => setIsPaymentModalOpen(true)}
                                                     className={cn(
                                                         "w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all",
                                                         isTelegramConnected
@@ -333,7 +353,7 @@ export function Hero() {
                                                     )}
                                                 >
                                                     <span className="text-lg">⚡</span>
-                                                    <span className="font-heading">Deploy OpenClaw</span>
+                                                    <span className="font-heading">Deploy FastClaww</span>
                                                 </button>
 
                                                 {!isTelegramConnected && (
@@ -348,6 +368,14 @@ export function Hero() {
                                     {/* Use of Empty Fragment to effectively remove the element while keeping syntax valid if surrounding elements need it, or just empty if it stands alone. In this case, simply removing content. */}
                                 </div>
                             </div>
+
+                            {/* Payment Modal inserted here to be part of the flow */}
+                            <PayPalPaymentModal
+                                isOpen={isPaymentModalOpen}
+                                onClose={() => setIsPaymentModalOpen(false)}
+                                amount="49.00"
+                                description="Premium API Access Pack"
+                            />
                         </div>
                     </motion.div>
 

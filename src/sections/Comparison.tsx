@@ -36,8 +36,8 @@ export function Comparison() {
                                 { task: "Creating SSH keys and storing securely", time: "10 min" },
                                 { task: "Connecting to the server via SSH", time: "5 min" },
                                 { task: "Installing Node.js and NPM", time: "5 min" },
-                                { task: "Installing OpenClaw", time: "7 min" },
-                                { task: "Setting up OpenClaw", time: "10 min" },
+                                { task: "Installing FastClaww", time: "7 min" },
+                                { task: "Setting up FastClaww", time: "10 min" },
                                 { task: "Connecting to AI provider", time: "4 min" },
                                 { task: "Pairing with Telegram", time: "4 min" }
                             ].map((item, i) => (
@@ -80,7 +80,7 @@ export function Comparison() {
                             </p>
 
                             <p className="text-zinc-500 leading-relaxed">
-                                Servers, SSH and OpenClaw Environment are already set up, waiting to get assigned. Simple, secure and fast connection to your bot.
+                                Servers, SSH and FastClaww Environment are already set up, waiting to get assigned. Simple, secure and fast connection to your bot.
                             </p>
                         </div>
                     </motion.div>

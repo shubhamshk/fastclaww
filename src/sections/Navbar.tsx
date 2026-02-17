@@ -40,7 +40,7 @@ export function Navbar() {
                             src="/logo.svg"
                             alt="FastClaww Logo"
                             fill
-                            className="object-contain"
+                            className="object-contain inverted-logo"
                         />
                     </div>
                     <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 font-heading tracking-tight">

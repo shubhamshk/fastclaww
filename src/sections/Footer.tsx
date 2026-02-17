@@ -14,7 +14,7 @@ export function Footer() {
                                 src="/logo.svg"
                                 alt="FastClaww Logo"
                                 fill
-                                className="object-contain"
+                                className="object-contain inverted-logo"
                             />
                         </div>
                         <span className="text-white font-bold text-lg font-heading tracking-tight">FastClaww</span>
@@ -53,8 +53,32 @@ export function Footer() {
                     </ul>
                 </div>
             </div>
-            <div className="container px-6 mt-12 pt-8 border-t border-white/5 text-center">
-                <p>&copy; {new Date().getFullYear()} FastClaww. All rights reserved.</p>
+            <div className="container px-6 mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6 text-xs text-zinc-500 font-medium">
+                    <p>&copy; {new Date().getFullYear()} FastClaww.</p>
+                    <div className="hidden md:block w-px h-3 bg-zinc-800" />
+                    <div className="flex items-center gap-2">
+                        <span>For queries:</span>
+                        <a href="mailto:designbyshk@gmail.com" className="text-zinc-400 hover:text-white transition-colors border-b border-transparent hover:border-zinc-500">
+                            designbyshk@gmail.com
+                        </a>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <span>Created by</span>
+                    <Link
+                        href="https://x.com/ClaudeXNancy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all text-white group"
+                    >
+                        <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                        </svg>
+                        <span className="font-semibold tracking-wide group-hover:text-indigo-300 transition-colors">Nancy</span>
+                    </Link>
+                </div>
             </div>
         </footer>
     );
