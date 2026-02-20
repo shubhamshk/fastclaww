@@ -3,8 +3,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, CheckCircle2 } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getPayPalConfig } from '@/app/actions/paypal';
 
 interface PayPalPaymentModalProps {
     isOpen: boolean;
@@ -25,9 +26,28 @@ export function PayPalPaymentModal({
 }: PayPalPaymentModalProps) {
     const [success, setSuccess] = useState(false);
     const [transactionId, setTransactionId] = useState("");
+    const [fetchedClientId, setFetchedClientId] = useState("");
+    const [fetchedPlanId, setFetchedPlanId] = useState("");
+    const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsLoadingConfig(true);
+            getPayPalConfig().then(config => {
+                setFetchedClientId(config.clientId);
+                setFetchedPlanId(config.planId);
+                setIsLoadingConfig(false);
+            }).catch(() => {
+                setIsLoadingConfig(false);
+            });
+        }
+    }, [isOpen]);
+
+    const actualClientId = fetchedClientId || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test";
+    const actualPlanId = fetchedPlanId || planId;
 
     const initialOptions = {
-        clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
+        clientId: actualClientId,
         currency: "USD",
         intent: isSubscription ? "subscription" : "capture",
         vault: isSubscription,
@@ -88,7 +108,7 @@ export function PayPalPaymentModal({
             const subscriptionId = data.subscriptionID;
             console.log("PayPal Subscription Created:", subscriptionId);
             setTransactionId(subscriptionId);
-            await saveTransaction(subscriptionId, { type: 'subscription', subscriptionId, planId });
+            await saveTransaction(subscriptionId, { type: 'subscription', subscriptionId, planId: actualPlanId });
         } else {
             // Handle One-Time Payment
             return actions.order.capture().then(async (details: any) => {
@@ -167,7 +187,7 @@ export function PayPalPaymentModal({
                             ) : (
                                 <>
                                     {/* Test Mode / Missing Plan Warning */}
-                                    {((initialOptions.clientId === "test" || !process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) || (isSubscription && !planId)) && (
+                                    {((initialOptions.clientId === "test") || (isSubscription && !actualPlanId)) && (
                                         <div className="mb-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-start gap-3">
                                             <div className="p-1 rounded bg-orange-500/20 text-orange-500 mt-0.5">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -176,10 +196,10 @@ export function PayPalPaymentModal({
                                             </div>
                                             <div>
                                                 <h4 className="text-orange-400 font-bold text-xs uppercase tracking-wide mb-1">
-                                                    {isSubscription && !planId ? "Configuration Required" : "Mock Mode Active"}
+                                                    {isSubscription && !actualPlanId ? "Configuration Required" : "Mock Mode Active"}
                                                 </h4>
                                                 <p className="text-orange-300/80 text-[11px] leading-relaxed">
-                                                    {isSubscription && !planId
+                                                    {isSubscription && !actualPlanId
                                                         ? "Please set a valid NEXT_PUBLIC_PAYPAL_PLAN_ID in .env.local"
                                                         : <span>Using <code>test</code> Client ID. No real money deducted.</span>}
                                                 </p>
@@ -206,37 +226,43 @@ export function PayPalPaymentModal({
                                     </div>
 
                                     {/* PayPal Button */}
-                                    <div className="relative z-0">
-                                        <PayPalScriptProvider options={initialOptions}>
-                                            <PayPalButtons
-                                                style={{
-                                                    layout: "vertical",
-                                                    color: "gold",
-                                                    shape: "rect",
-                                                    label: isSubscription ? "subscribe" : "pay",
-                                                    height: 48
-                                                }}
-                                                createOrder={isSubscription ? undefined : (data, actions) => {
-                                                    return actions.order.create({
-                                                        purchase_units: [{
-                                                            amount: {
-                                                                value: amount,
-                                                                currency_code: "USD"
-                                                            },
-                                                            description: description
-                                                        }],
-                                                        intent: "CAPTURE"
-                                                    });
-                                                }}
-                                                createSubscription={isSubscription ? (data, actions) => {
-                                                    return actions.subscription.create({
-                                                        plan_id: planId ?? ""
-                                                    });
-                                                } : undefined}
-                                                onApprove={handleApprove}
-                                                onError={(err: any) => console.error("PayPal Error:", err)}
-                                            />
-                                        </PayPalScriptProvider>
+                                    <div className="relative z-0 min-h-[50px] flex items-center justify-center">
+                                        {isLoadingConfig ? (
+                                            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                        ) : (
+                                            <div className="w-full">
+                                                <PayPalScriptProvider options={initialOptions}>
+                                                    <PayPalButtons
+                                                        style={{
+                                                            layout: "vertical",
+                                                            color: "gold",
+                                                            shape: "rect",
+                                                            label: isSubscription ? "subscribe" : "pay",
+                                                            height: 48
+                                                        }}
+                                                        createOrder={isSubscription ? undefined : (data, actions) => {
+                                                            return actions.order.create({
+                                                                purchase_units: [{
+                                                                    amount: {
+                                                                        value: amount,
+                                                                        currency_code: "USD"
+                                                                    },
+                                                                    description: description
+                                                                }],
+                                                                intent: "CAPTURE"
+                                                            });
+                                                        }}
+                                                        createSubscription={isSubscription ? (data, actions) => {
+                                                            return actions.subscription.create({
+                                                                plan_id: actualPlanId ?? ""
+                                                            });
+                                                        } : undefined}
+                                                        onApprove={handleApprove}
+                                                        onError={(err: any) => console.error("PayPal Error:", err)}
+                                                    />
+                                                </PayPalScriptProvider>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <p className="text-center text-[10px] text-zinc-600 mt-4">
