@@ -28,6 +28,7 @@ export function PayPalPaymentModal({
     const [transactionId, setTransactionId] = useState("");
     const [fetchedClientId, setFetchedClientId] = useState("");
     const [fetchedPlanId, setFetchedPlanId] = useState("");
+    const [env, setEnv] = useState("sandbox");
     const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
     useEffect(() => {
@@ -36,8 +37,11 @@ export function PayPalPaymentModal({
             getPayPalConfig().then(config => {
                 setFetchedClientId(config.clientId);
                 setFetchedPlanId(config.planId);
+                if (config.environment) setEnv(config.environment);
+                console.log(`[PayPal] Configuration loaded. Environment: ${config.environment}, PlanID: ${config.planId}, ClientID prefix: ${config.clientId.substring(0, 5)}...`);
                 setIsLoadingConfig(false);
-            }).catch(() => {
+            }).catch((err) => {
+                console.error("[PayPal] Config load error:", err);
                 setIsLoadingConfig(false);
             });
         }
