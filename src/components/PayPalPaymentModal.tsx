@@ -30,6 +30,7 @@ export function PayPalPaymentModal({
     const [fetchedPlanId, setFetchedPlanId] = useState("");
     const [env, setEnv] = useState("sandbox");
     const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -188,6 +189,22 @@ export function PayPalPaymentModal({
                                         Close
                                     </button>
                                 </div>
+                            ) : paymentError ? (
+                                <div className="flex flex-col items-center justify-center py-6 text-center">
+                                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                                        <X className="w-10 h-10 text-red-500" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-4">Payment Setup Error</h3>
+                                    <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-left text-sm mb-6">
+                                        <p className="text-red-400 font-mono text-[11px] whitespace-pre-wrap">{paymentError}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setPaymentError(null)}
+                                        className="bg-white text-black font-bold py-3 px-8 rounded-full shadow-lg hover:bg-zinc-200 transition-all font-heading"
+                                    >
+                                        Try Again
+                                    </button>
+                                </div>
                             ) : (
                                 <>
                                     {/* Test Mode / Missing Plan Warning */}
@@ -262,7 +279,14 @@ export function PayPalPaymentModal({
                                                             });
                                                         } : undefined}
                                                         onApprove={handleApprove}
-                                                        onError={(err: any) => console.error("PayPal Error:", err)}
+                                                        onError={(err: any) => {
+                                                            console.error("PayPal Error:", err);
+                                                            if (err?.message?.includes('RESOURCE_NOT_FOUND')) {
+                                                                setPaymentError(`CRITICAL ERROR:\nThe Plan ID [${actualPlanId}] DOES NOT EXIST in the current PayPal environment (Client ID: ${actualClientId.substring(0, 6)}...).\n\nPlease go to /paypal-setup on your website to generate a valid LIVE Plan ID, and add it to your Environment Variables as NEXT_PUBLIC_PAYPAL_PLAN_ID_LIVE!`);
+                                                            } else {
+                                                                setPaymentError(err?.message || "An unknown PayPal error occurred.");
+                                                            }
+                                                        }}
                                                     />
                                                 </PayPalScriptProvider>
                                             </div>

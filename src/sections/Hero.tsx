@@ -136,7 +136,7 @@ export function Hero() {
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-6 leading-[1.05] font-heading">
                             The Easiest & <br className="hidden lg:block" /> Cheapest way to <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 animate-text-gradient">
-                                run FastClaww
+                                run OpenClaw
                             </span>
                         </h1>
 
@@ -376,7 +376,6 @@ export function Hero() {
                                 amount="49.00"
                                 description="Premium API Access Subscription"
                                 isSubscription={true}
-                                planId={process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID}
                             />
                         </div>
                     </motion.div>
